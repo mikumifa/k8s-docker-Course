@@ -1,0 +1,23 @@
+FROM maven:3.8.4-openjdk-8 AS build
+
+WORKDIR /app
+
+COPY pom.xml .
+RUN mvn dependency:go-offline
+
+COPY src ./src
+RUN mvn package -DskipTests
+
+# 构建完成后，拷贝构建好的 JAR 文件到一个新的阶段
+FROM eclipse-temurin:8u372-b07-jre-centos7 AS final
+
+COPY --from=build /app/target/admin-service.jar /app/admin-service.jar
+COPY runboot.sh /app/
+
+WORKDIR /app
+
+RUN chmod a+x runboot.sh
+
+CMD ["sh","-c","/app/runboot.sh"]
+
+EXPOSE 10000
